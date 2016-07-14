@@ -263,7 +263,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         return nonPrivateFields;
     }
 
-    MethodSpec generateConstructor(ImmutableList<Property> properties) {
+    private MethodSpec generateConstructor(ImmutableList<Property> properties) {
 
         List<ParameterSpec> params = Lists.newArrayListWithCapacity(properties.size());
         for (Property property : properties) {
@@ -321,7 +321,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         return builder.build();
     }
 
-    MethodSpec generateDescribeContents() {
+    private MethodSpec generateDescribeContents() {
         return MethodSpec.methodBuilder("describeContents")
                 .addAnnotation(Override.class)
                 .addModifiers(PUBLIC)
@@ -330,7 +330,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 .build();
     }
 
-    FieldSpec generateCreator(
+    private FieldSpec generateCreator(
             ProcessingEnvironment env,
             ImmutableList<Property> properties,
             TypeName type,
