@@ -1,9 +1,13 @@
 package com.aitorvs.autoparcel.internal.codegen;
 
 import com.aitorvs.autoparcel.AutoParcel;
+import com.aitorvs.autoparcel.ParcelAdapter;
 import com.aitorvs.autoparcel.internal.common.MoreElements;
+import com.google.common.base.CaseFormat;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ArrayTypeName;
@@ -12,6 +16,7 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.NameAllocator;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
@@ -21,7 +26,9 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -29,10 +36,12 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
@@ -49,6 +58,41 @@ import static javax.lang.model.element.Modifier.STATIC;
 public final class AutoParcelProcessor extends AbstractProcessor {
     private ErrorReporter mErrorReporter;
     private Types mTypeUtils;
+
+
+    static final class Property {
+        final String fieldName;
+        final VariableElement element;
+        final TypeName typeName;
+        final ImmutableSet<String> annotations;
+        TypeMirror typeAdapter;
+
+
+        Property(String fieldName, VariableElement element) {
+            this.fieldName = fieldName;
+            this.element = element;
+            this.typeName = TypeName.get(element.asType());
+            this.annotations = getAnnotations(element);
+
+            ParcelAdapter parcelAdapter = element.getAnnotation(ParcelAdapter.class);
+            if (parcelAdapter != null) {
+                try {
+                    parcelAdapter.value();
+                } catch (MirroredTypeException e) {
+                    this.typeAdapter = e.getTypeMirror();
+                }
+            }
+        }
+
+        private ImmutableSet<String> getAnnotations(VariableElement element) {
+            ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+            for (AnnotationMirror annotation : element.getAnnotationMirrors()) {
+                builder.add(annotation.getAnnotationType().asElement().getSimpleName().toString());
+            }
+
+            return builder.build();
+        }
+    }
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -141,6 +185,13 @@ public final class AutoParcelProcessor extends AbstractProcessor {
             mErrorReporter.abortWithError("generateClass was invoked with no non-private fields", type);
         }
 
+        // get the properties
+        ImmutableList<Property> properties = buildProperties(nonPrivateFields);
+
+        // get the type adapters
+        ImmutableMap<TypeMirror, FieldSpec> typeAdapters = getTypeAdapters(properties);
+
+
         // Generate the AutoParcel_??? class
         String pkg = TypeUtil.packageNameOf(type);
         TypeName classTypeName = ClassName.get(pkg, className);
@@ -152,17 +203,48 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 // implements Parcelable
                 .addSuperinterface(ClassName.get("android.os", "Parcelable"))
                 // Add the constructor
-                .addMethod(generateConstructor(nonPrivateFields))
+                .addMethod(generateConstructor(properties))
                 // overrides describeContents()
                 .addMethod(generateDescribeContents())
                 // static final CREATOR
-                .addField(generateCreator(processingEnv, nonPrivateFields, classTypeName))
+                .addField(generateCreator(processingEnv, properties, classTypeName, typeAdapters))
                 // overrides writeToParcel()
-                .addMethod(generateWriteToParcel(processingEnv, nonPrivateFields)); // generate writeToParcel()
+                .addMethod(generateWriteToParcel(processingEnv, properties, typeAdapters)); // generate writeToParcel()
+
+        if (!typeAdapters.isEmpty()) {
+            typeAdapters.values().forEach(subClass::addField);
+        }
 
 
         JavaFile javaFile = JavaFile.builder(pkg, subClass.build()).build();
         return javaFile.toString();
+    }
+
+    private ImmutableMap<TypeMirror, FieldSpec> getTypeAdapters(ImmutableList<Property> properties) {
+        Map<TypeMirror, FieldSpec> typeAdapters = new LinkedHashMap<>();
+        NameAllocator nameAllocator = new NameAllocator();
+        nameAllocator.newName("CREATOR");
+        for (Property property : properties) {
+            if (property.typeAdapter != null && !typeAdapters.containsKey(property.typeAdapter)) {
+                ClassName typeName = (ClassName) TypeName.get(property.typeAdapter);
+                String name = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, typeName.simpleName());
+                name = nameAllocator.newName(name, typeName);
+
+                typeAdapters.put(property.typeAdapter, FieldSpec.builder(
+                        typeName, NameAllocator.toJavaIdentifier(name), PRIVATE, STATIC, FINAL)
+                        .initializer("new $T()", typeName).build());
+            }
+        }
+        return ImmutableMap.copyOf(typeAdapters);
+    }
+
+    private ImmutableList<Property> buildProperties(List<VariableElement> elements) {
+        ImmutableList.Builder<Property> builder = ImmutableList.builder();
+        for (VariableElement element : elements) {
+            builder.add(new Property(element.getSimpleName().toString(), element));
+        }
+
+        return builder.build();
     }
 
     private List<VariableElement> getNonPrivateLocalFields(TypeElement type) {
@@ -178,11 +260,11 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         return nonPrivateFields;
     }
 
-    MethodSpec generateConstructor(List<VariableElement> fields) {
+    MethodSpec generateConstructor(ImmutableList<Property> properties) {
 
-        List<ParameterSpec> params = Lists.newArrayListWithCapacity(fields.size());
-        for (VariableElement field : fields) {
-            params.add(ParameterSpec.builder(TypeName.get(field.asType()), field.getSimpleName().toString()).build());
+        List<ParameterSpec> params = Lists.newArrayListWithCapacity(properties.size());
+        for (Property property : properties) {
+            params.add(ParameterSpec.builder(property.typeName, property.fieldName).build());
         }
 
         MethodSpec.Builder builder = MethodSpec.constructorBuilder()
@@ -210,7 +292,10 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         return pkg + dot + prefix + name;
     }
 
-    private MethodSpec generateWriteToParcel(ProcessingEnvironment env, List<VariableElement> fields) {
+    private MethodSpec generateWriteToParcel(
+            ProcessingEnvironment env,
+            ImmutableList<Property> properties,
+            ImmutableMap<TypeMirror, FieldSpec> typeAdapters) {
         ParameterSpec dest = ParameterSpec
                 .builder(ClassName.get("android.os", "Parcel"), "dest")
                 .build();
@@ -221,8 +306,13 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 .addParameter(dest)
                 .addParameter(flags);
 
-        for (VariableElement field : fields) {
-            builder.addCode(Parcelables.writeValue(field, dest, flags));
+        for (Property p : properties) {
+            if (p.typeAdapter != null && typeAdapters.containsKey(p.typeAdapter)) {
+                FieldSpec typeAdapter = typeAdapters.get(p.typeAdapter);
+                builder.addCode(Parcelables.writeValueWithTypeAdapter(typeAdapter, p, dest));
+            } else {
+                builder.addCode(Parcelables.writeValue(p.element, dest, flags));
+            }
         }
 
         return builder.build();
@@ -237,7 +327,11 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 .build();
     }
 
-    FieldSpec generateCreator(ProcessingEnvironment env, List<VariableElement> fields, TypeName type) {
+    FieldSpec generateCreator(
+            ProcessingEnvironment env,
+            ImmutableList<Property> properties,
+            TypeName type,
+            ImmutableMap<TypeMirror, FieldSpec> typeAdapters) {
         ClassName creator = ClassName.bestGuess("android.os.Parcelable.Creator");
         TypeName creatorOfClass = ParameterizedTypeName.get(creator, type);
 
@@ -246,11 +340,15 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         ctorCall.add("return new $T(\n", type);
         ctorCall.indent().indent();
         boolean requiresSuppressWarnings = false;
-        for (int i = 0, n = fields.size(); i < fields.size(); i++) {
-            VariableElement field = fields.get(i);
-            final TypeName typeName = TypeName.get(field.asType());
-            requiresSuppressWarnings |= Parcelables.isTypeRequiresSuppressWarnings(typeName);
-            Parcelables.readValue(ctorCall, field, typeName);
+        for (int i = 0, n = properties.size(); i < properties.size(); i++) {
+            Property p = properties.get(i);
+
+            if (p.typeAdapter != null && typeAdapters.containsKey(p.typeAdapter)) {
+                Parcelables.readValueWithTypeAdapter(ctorCall, p.element, typeAdapters.get(p.typeAdapter));
+            } else {
+                requiresSuppressWarnings |= Parcelables.isTypeRequiresSuppressWarnings(p.typeName);
+                Parcelables.readValue(ctorCall, p.element, p.typeName);
+            }
 
             if (i < n - 1) ctorCall.add(",");
             ctorCall.add("\n");

@@ -1,7 +1,7 @@
 package com.aitorvs.android.autoparcel;
 
 /*
- * Copyright (C) 13/07/16 aitorvs
+ * Copyright (C) 14/07/16 aitorvs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,20 @@ package com.aitorvs.android.autoparcel;
  * limitations under the License.
  */
 
-import com.aitorvs.autoparcel.AutoParcel;
-import com.aitorvs.autoparcel.ParcelAdapter;
+import android.os.Parcel;
+
+import com.aitorvs.autoparcel.ParcelTypeAdapter;
 
 import java.util.Date;
 
-@AutoParcel
-public abstract class MyParcelable {
-    private int intVale;
-    private String stringValue;
-    private AnotherParcelable anotherParcelable;
-    protected long[] longArray;
-    @ParcelAdapter(DateTypeAdapter.class) protected Date date;
+class DateTypeAdapter implements ParcelTypeAdapter<Date> {
+    @Override
+    public Date fromParcel(Parcel in) {
+        return new Date(in.readLong());
+    }
+
+    @Override
+    public void toParcel(Date value, Parcel dest) {
+        dest.writeLong(value.getTime());
+    }
 }

@@ -2,4 +2,5 @@ apply plugin: 'java'
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
+    compileOnly 'com.google.android:android:2.1.2'
 }

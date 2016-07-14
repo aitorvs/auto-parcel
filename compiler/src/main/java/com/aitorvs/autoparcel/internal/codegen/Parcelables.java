@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
 
@@ -158,6 +159,10 @@ class Parcelables {
         }
     }
 
+    public static void readValueWithTypeAdapter(CodeBlock.Builder block, VariableElement field, final FieldSpec adapter) {
+        block.add("$N.fromParcel(in)", adapter);
+    }
+
     public static CodeBlock writeValue(VariableElement field, ParameterSpec out, ParameterSpec flags) {
         CodeBlock.Builder block = CodeBlock.builder();
 
@@ -234,5 +239,12 @@ class Parcelables {
     static boolean isTypeRequiresSuppressWarnings(TypeName type) {
         return type.equals(LIST) ||
                 type.equals(MAP);
+    }
+
+    public static CodeBlock writeValueWithTypeAdapter(FieldSpec adapter, AutoParcelProcessor.Property p, ParameterSpec out) {
+        CodeBlock.Builder block = CodeBlock.builder();
+        block.addStatement("$N.toParcel($N, $N)", adapter, p.fieldName, out);
+
+        return block.build();
     }
 }

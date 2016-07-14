@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation to indicate the auto-parcel that the annotated class needs to be Parcelable
+ * An annotation to indicate the auto-parcel that the annotated class needs to be {@link android.os.Parcelable}
  *
  * <pre>
  * <code>
