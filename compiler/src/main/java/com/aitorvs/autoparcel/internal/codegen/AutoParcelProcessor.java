@@ -84,6 +84,10 @@ public final class AutoParcelProcessor extends AbstractProcessor {
             }
         }
 
+        public boolean isNullable() {
+            return this.annotations.contains("Nullable");
+        }
+
         private ImmutableSet<String> getAnnotations(VariableElement element) {
             ImmutableSet.Builder<String> builder = ImmutableSet.builder();
             for (AnnotationMirror annotation : element.getAnnotationMirrors()) {
@@ -144,7 +148,6 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         String source = generateClass(type, className, type.getSimpleName().toString(), false);
         source = Reformatter.fixup(source);
         writeSourceFile(fqClassName, source, type);
-        mErrorReporter.reportNote(source, type);
 
     }
 
@@ -311,7 +314,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 FieldSpec typeAdapter = typeAdapters.get(p.typeAdapter);
                 builder.addCode(Parcelables.writeValueWithTypeAdapter(typeAdapter, p, dest));
             } else {
-                builder.addCode(Parcelables.writeValue(p.element, dest, flags));
+                builder.addCode(Parcelables.writeValue(p, dest, flags));
             }
         }
 
@@ -344,10 +347,10 @@ public final class AutoParcelProcessor extends AbstractProcessor {
             Property p = properties.get(i);
 
             if (p.typeAdapter != null && typeAdapters.containsKey(p.typeAdapter)) {
-                Parcelables.readValueWithTypeAdapter(ctorCall, p.element, typeAdapters.get(p.typeAdapter));
+                Parcelables.readValueWithTypeAdapter(ctorCall, p, typeAdapters.get(p.typeAdapter));
             } else {
                 requiresSuppressWarnings |= Parcelables.isTypeRequiresSuppressWarnings(p.typeName);
-                Parcelables.readValue(ctorCall, p.element, p.typeName);
+                Parcelables.readValue(ctorCall, p, p.typeName);
             }
 
             if (i < n - 1) ctorCall.add(",");

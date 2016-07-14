@@ -16,6 +16,8 @@ package com.aitorvs.android.autoparcel;
  * limitations under the License.
  */
 
+import android.support.annotation.Nullable;
+
 import com.aitorvs.autoparcel.AutoParcel;
 import com.aitorvs.autoparcel.ParcelAdapter;
 
@@ -26,6 +28,9 @@ public abstract class MyParcelable {
     private int intVale;
     private String stringValue;
     private AnotherParcelable anotherParcelable;
+    @Nullable
     protected long[] longArray;
-    @ParcelAdapter(DateTypeAdapter.class) protected Date date;
+    @Nullable
+    @ParcelAdapter(DateTypeAdapter.class)
+    protected Date date;
 }

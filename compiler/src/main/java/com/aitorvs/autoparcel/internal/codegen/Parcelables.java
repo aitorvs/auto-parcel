@@ -26,7 +26,11 @@ import com.squareup.javapoet.TypeName;
 
 import java.util.Set;
 
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 
 /**
  * This class implementation has been based and refactored from <code>Parcelables</code> auto-value
@@ -64,9 +68,11 @@ class Parcelables {
             BUNDLE, PARCELABLE, PARCELABLEARRAY, CHARSEQUENCE, IBINDER, OBJECTARRAY,
             SERIALIZABLE, PERSISTABLEBUNDLE, SIZE, SIZEF);
 
-    static void readValue(CodeBlock.Builder block, VariableElement field, final TypeName parcelableType) {
+    static void readValue(CodeBlock.Builder block, AutoParcelProcessor.Property property, final TypeName parcelableType) {
 
-        TypeName fieldType = TypeName.get(field.asType());
+        if (property.isNullable()) {
+            block.add("in.readInt() == 0 ? ");
+        }
 
         if (parcelableType.equals(STRING)) {
             block.add("in.readString()");
@@ -111,10 +117,10 @@ class Parcelables {
         } else if (parcelableType.equals(STRINGARRAY)) {
             block.add("in.readStringArray()");
         } else if (parcelableType.equals(IBINDER)) {
-            if (fieldType.equals(IBINDER)) {
+            if (property.typeName.equals(IBINDER)) {
                 block.add("in.readStrongBinder()");
             } else {
-                block.add("($T) in.readStrongBinder()", fieldType);
+                block.add("($T) in.readStrongBinder()", property.typeName);
             }
         } else if (parcelableType.equals(OBJECTARRAY)) {
 //            block.add("in.readArray($T.class.getClassLoader())",
@@ -124,10 +130,10 @@ class Parcelables {
         } else if (parcelableType.equals(LONGARRAY)) {
             block.add("in.createLongArray()");
         } else if (parcelableType.equals(SERIALIZABLE)) {
-            if (fieldType.equals(SERIALIZABLE)) {
+            if (property.typeName.equals(SERIALIZABLE)) {
                 block.add("in.readSerializable()");
             } else {
-                block.add("($T) in.readSerializable()", fieldType);
+                block.add("($T) in.readSerializable()", property.typeName);
             }
         } else if (parcelableType.equals(PARCELABLEARRAY)) {
 //            ArrayTypeName atype = (ArrayTypeName) fieldType;
@@ -144,107 +150,138 @@ class Parcelables {
         } else if (parcelableType.equals(SPARSEBOOLEANARRAY)) {
             block.add("in.readSparseBooleanArray()");
         } else if (parcelableType.equals(BUNDLE)) {
-            block.add("in.readBundle($T.class.getClassLoader())", fieldType);
+            block.add("in.readBundle($T.class.getClassLoader())", property.typeName);
         } else if (parcelableType.equals(PERSISTABLEBUNDLE)) {
-            block.add("in.readPersistableBundle($T.class.getClassLoader())", fieldType);
+            block.add("in.readPersistableBundle($T.class.getClassLoader())", property.typeName);
         } else if (parcelableType.equals(SIZE)) {
             block.add("in.readSize()");
         } else if (parcelableType.equals(SIZEF)) {
             block.add("in.readSizeF()");
         } else if (parcelableType.equals(ENUM)) {
-            block.add("$T.valueOf(in.readString())", fieldType);
+            block.add("$T.valueOf(in.readString())", property.typeName);
         } else {
 //            block.add("($T) in.readValue($T.class.getClassLoader())", fieldType,
 //                    getParcelableComponent(types, property.element.getReturnType()));
         }
+
+        if (property.isNullable()) {
+            block.add(" : null");
+        }
     }
 
-    public static void readValueWithTypeAdapter(CodeBlock.Builder block, VariableElement field, final FieldSpec adapter) {
+    public static void readValueWithTypeAdapter(CodeBlock.Builder block, AutoParcelProcessor.Property property, final FieldSpec adapter) {
+        if (property.isNullable()) {
+            block.add("in.readInt() == 0 ? ");
+        }
         block.add("$N.fromParcel(in)", adapter);
+        if (property.isNullable()) {
+            block.add(" : null");
+        }
     }
 
-    public static CodeBlock writeValue(VariableElement field, ParameterSpec out, ParameterSpec flags) {
+    public static CodeBlock writeValue(AutoParcelProcessor.Property property, ParameterSpec out, ParameterSpec flags) {
         CodeBlock.Builder block = CodeBlock.builder();
 
-        TypeName type = TypeName.get(field.asType());
-        if (type.equals(STRING))
-            block.add("$N.writeString($N)", out, field.getSimpleName());
-        else if (type.equals(TypeName.BYTE) || type.equals(TypeName.BYTE.box()))
-            block.add("$N.writeInt($N)", out, field.getSimpleName());
-        else if (type.equals(TypeName.INT) || type.equals(TypeName.INT.box()))
-            block.add("$N.writeInt($N)", out, field.getSimpleName());
-        else if (type.equals(TypeName.SHORT))
-            block.add("$N.writeInt(((Short) $N).intValue())", out, field.getSimpleName());
-        else if (type.equals(TypeName.SHORT.box()))
-            block.add("$N.writeInt($N.intValue())", out, field.getSimpleName());
-        else if (type.equals(TypeName.CHAR) || type.equals(TypeName.CHAR.box()))
-            block.add("$N.writeInt($N)", out, field.getSimpleName());
-        else if (type.equals(TypeName.LONG) || type.equals(TypeName.LONG.box()))
-            block.add("$N.writeLong($N)", out, field.getSimpleName());
-        else if (type.equals(TypeName.FLOAT) || type.equals(TypeName.FLOAT.box()))
-            block.add("$N.writeFloat($N)", out, field.getSimpleName());
-        else if (type.equals(TypeName.DOUBLE) || type.equals(TypeName.DOUBLE.box()))
-            block.add("$N.writeDouble($N)", out, field.getSimpleName());
-        else if (type.equals(TypeName.BOOLEAN) || type.equals(TypeName.BOOLEAN.box()))
-            block.add("$N.writeInt($N ? 1 : 0)", out, field.getSimpleName());
-        else if (type.equals(PARCELABLE))
-            block.add("$N.writeParcelable($N, $N)", out, field.getSimpleName(), flags);
-        else if (type.equals(CHARSEQUENCE))
-            block.add("$T.writeToParcel($N, $N, $N)", TEXTUTILS, field.getSimpleName(), out, flags);
-        else if (type.equals(MAP))
-            block.add("$N.writeMap($N)", out, field.getSimpleName());
-        else if (type.equals(LIST))
-            block.add("$N.writeList($N)", out, field.getSimpleName());
-        else if (type.equals(BOOLEANARRAY))
-            block.add("$N.writeBooleanArray($N)", out, field.getSimpleName());
-        else if (type.equals(BYTEARRAY))
-            block.add("$N.writeByteArray($N)", out, field.getSimpleName());
-        else if (type.equals(CHARARRAY))
-            block.add("$N.writeCharArray($N)", out, field.getSimpleName());
-        else if (type.equals(STRINGARRAY))
-            block.add("$N.writeStringArray($N)", out, field.getSimpleName());
-        else if (type.equals(IBINDER))
-            block.add("$N.writeStrongBinder($N)", out, field.getSimpleName());
-        else if (type.equals(OBJECTARRAY))
-            block.add("$N.writeArray($N)", out, field.getSimpleName());
-        else if (type.equals(INTARRAY))
-            block.add("$N.writeIntArray($N)", out, field.getSimpleName());
-        else if (type.equals(LONGARRAY))
-            block.add("$N.writeLongArray($N)", out, field.getSimpleName());
-        else if (type.equals(SERIALIZABLE))
-            block.add("$N.writeSerializable($N)", out, field.getSimpleName());
-        else if (type.equals(PARCELABLEARRAY))
-            block.add("$N.writeParcelableArray($N)", out, field.getSimpleName());
-        else if (type.equals(SPARSEARRAY))
-            block.add("$N.writeSparseArray($N)", out, field.getSimpleName());
-        else if (type.equals(SPARSEBOOLEANARRAY))
-            block.add("$N.writeSparseBooleanArray($N)", out, field.getSimpleName());
-        else if (type.equals(BUNDLE))
-            block.add("$N.writeBundle($N)", out, field.getSimpleName());
-        else if (type.equals(PERSISTABLEBUNDLE))
-            block.add("$N.writePersistableBundle($N)", out, field.getSimpleName());
-        else if (type.equals(SIZE))
-            block.add("$N.writeSize($N)", out, field.getSimpleName());
-        else if (type.equals(SIZEF))
-            block.add("$N.writeSizeF($N)", out, field.getSimpleName());
-        else if (type.equals(ENUM))
-            block.add("$N.writeString($N.name())", out, field.getSimpleName());
+        if (property.isNullable()) {
+            block.beginControlFlow("if ($N == null)", property.fieldName);
+            block.addStatement("$N.writeInt(1)", out);
+            block.nextControlFlow("else");
+            block.addStatement("$N.writeInt(0)", out);
+        }
+        
+        if (property.typeName.equals(STRING))
+            block.add("$N.writeString($N)", out, property.fieldName);
+        else if (property.typeName.equals(TypeName.BYTE) || property.typeName.equals(TypeName.BYTE.box()))
+            block.add("$N.writeInt($N)", out, property.fieldName);
+        else if (property.typeName.equals(TypeName.INT) || property.typeName.equals(TypeName.INT.box()))
+            block.add("$N.writeInt($N)", out, property.fieldName);
+        else if (property.typeName.equals(TypeName.SHORT))
+            block.add("$N.writeInt(((Short) $N).intValue())", out, property.fieldName);
+        else if (property.typeName.equals(TypeName.SHORT.box()))
+            block.add("$N.writeInt($N.intValue())", out, property.fieldName);
+        else if (property.typeName.equals(TypeName.CHAR) || property.typeName.equals(TypeName.CHAR.box()))
+            block.add("$N.writeInt($N)", out, property.fieldName);
+        else if (property.typeName.equals(TypeName.LONG) || property.typeName.equals(TypeName.LONG.box()))
+            block.add("$N.writeLong($N)", out, property.fieldName);
+        else if (property.typeName.equals(TypeName.FLOAT) || property.typeName.equals(TypeName.FLOAT.box()))
+            block.add("$N.writeFloat($N)", out, property.fieldName);
+        else if (property.typeName.equals(TypeName.DOUBLE) || property.typeName.equals(TypeName.DOUBLE.box()))
+            block.add("$N.writeDouble($N)", out, property.fieldName);
+        else if (property.typeName.equals(TypeName.BOOLEAN) || property.typeName.equals(TypeName.BOOLEAN.box()))
+            block.add("$N.writeInt($N ? 1 : 0)", out, property.fieldName);
+        else if (property.typeName.equals(PARCELABLE))
+            block.add("$N.writeParcelable($N, $N)", out, property.fieldName, flags);
+        else if (property.typeName.equals(CHARSEQUENCE))
+            block.add("$T.writeToParcel($N, $N, $N)", TEXTUTILS, property.fieldName, out, flags);
+        else if (property.typeName.equals(MAP))
+            block.add("$N.writeMap($N)", out, property.fieldName);
+        else if (property.typeName.equals(LIST))
+            block.add("$N.writeList($N)", out, property.fieldName);
+        else if (property.typeName.equals(BOOLEANARRAY))
+            block.add("$N.writeBooleanArray($N)", out, property.fieldName);
+        else if (property.typeName.equals(BYTEARRAY))
+            block.add("$N.writeByteArray($N)", out, property.fieldName);
+        else if (property.typeName.equals(CHARARRAY))
+            block.add("$N.writeCharArray($N)", out, property.fieldName);
+        else if (property.typeName.equals(STRINGARRAY))
+            block.add("$N.writeStringArray($N)", out, property.fieldName);
+        else if (property.typeName.equals(IBINDER))
+            block.add("$N.writeStrongBinder($N)", out, property.fieldName);
+        else if (property.typeName.equals(OBJECTARRAY))
+            block.add("$N.writeArray($N)", out, property.fieldName);
+        else if (property.typeName.equals(INTARRAY))
+            block.add("$N.writeIntArray($N)", out, property.fieldName);
+        else if (property.typeName.equals(LONGARRAY))
+            block.add("$N.writeLongArray($N)", out, property.fieldName);
+        else if (property.typeName.equals(SERIALIZABLE))
+            block.add("$N.writeSerializable($N)", out, property.fieldName);
+        else if (property.typeName.equals(PARCELABLEARRAY))
+            block.add("$N.writeParcelableArray($N)", out, property.fieldName);
+        else if (property.typeName.equals(SPARSEARRAY))
+            block.add("$N.writeSparseArray($N)", out, property.fieldName);
+        else if (property.typeName.equals(SPARSEBOOLEANARRAY))
+            block.add("$N.writeSparseBooleanArray($N)", out, property.fieldName);
+        else if (property.typeName.equals(BUNDLE))
+            block.add("$N.writeBundle($N)", out, property.fieldName);
+        else if (property.typeName.equals(PERSISTABLEBUNDLE))
+            block.add("$N.writePersistableBundle($N)", out, property.fieldName);
+        else if (property.typeName.equals(SIZE))
+            block.add("$N.writeSize($N)", out, property.fieldName);
+        else if (property.typeName.equals(SIZEF))
+            block.add("$N.writeSizeF($N)", out, property.fieldName);
+        else if (property.typeName.equals(ENUM))
+            block.add("$N.writeString($N.name())", out, property.fieldName);
         else
-            block.add("$N.writeValue($N)", out, field.getSimpleName());
+            block.add("$N.writeValue($N)", out, property.fieldName);
 
         block.add(";\n");
+
+        if (property.isNullable()) {
+            block.endControlFlow();
+        }
+        return block.build();
+    }
+
+    public static CodeBlock writeValueWithTypeAdapter(FieldSpec adapter, AutoParcelProcessor.Property p, ParameterSpec out) {
+        CodeBlock.Builder block = CodeBlock.builder();
+
+        if (p.isNullable()) {
+            block.beginControlFlow("if ($N == null)", p.fieldName);
+            block.addStatement("$N.writeInt(1)", out);
+            block.nextControlFlow("else");
+            block.addStatement("$N.writeInt(0)", out);
+        }
+        block.addStatement("$N.toParcel($N, $N)", adapter, p.fieldName, out);
+
+        if (p.isNullable()) {
+            block.endControlFlow();
+        }
+
         return block.build();
     }
 
     static boolean isTypeRequiresSuppressWarnings(TypeName type) {
         return type.equals(LIST) ||
                 type.equals(MAP);
-    }
-
-    public static CodeBlock writeValueWithTypeAdapter(FieldSpec adapter, AutoParcelProcessor.Property p, ParameterSpec out) {
-        CodeBlock.Builder block = CodeBlock.builder();
-        block.addStatement("$N.toParcel($N, $N)", adapter, p.fieldName, out);
-
-        return block.build();
     }
 }
