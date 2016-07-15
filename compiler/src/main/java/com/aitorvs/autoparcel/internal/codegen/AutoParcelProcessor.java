@@ -219,8 +219,6 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 .addModifiers(FINAL)
                 // extends from original abstract class
                 .superclass(ClassName.get(pkg, classToExtend))
-                // implements Parcelable
-                .addSuperinterface(ClassName.get("android.os", "Parcelable"))
                 // Add the constructor
                 .addMethod(generateConstructor(properties))
                 // overrides describeContents()
@@ -229,6 +227,11 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 .addField(generateCreator(processingEnv, properties, classTypeName, typeAdapters))
                 // overrides writeToParcel()
                 .addMethod(generateWriteToParcel(processingEnv, properties, typeAdapters)); // generate writeToParcel()
+
+        if (!ancestoIsParcelable(processingEnv, type)) {
+            // Implement android.os.Parcelable if the ancestor does not do it.
+            subClass.addSuperinterface(ClassName.get("android.os", "Parcelable"));
+        }
 
         if (!typeAdapters.isEmpty()) {
             typeAdapters.values().forEach(subClass::addField);
@@ -433,6 +436,13 @@ public final class AutoParcelProcessor extends AbstractProcessor {
             }
             type = parentElement;
         }
+    }
+
+    private boolean ancestoIsParcelable(ProcessingEnvironment env, TypeElement type) {
+        // TODO: 15/07/16 check recursively
+        TypeMirror classType = type.asType();
+        TypeMirror parcelable = env.getElementUtils().getTypeElement("android.os.Parcelable").asType();
+        return TypeUtil.isClassOfType(env.getTypeUtils(), parcelable, classType);
     }
 
     private static AnnotationSpec createSuppressUncheckedWarningAnnotation() {

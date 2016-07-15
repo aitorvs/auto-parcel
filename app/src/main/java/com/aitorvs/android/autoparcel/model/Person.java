@@ -16,6 +16,7 @@ package com.aitorvs.android.autoparcel.model;
  * limitations under the License.
  */
 
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
@@ -25,7 +26,7 @@ import com.aitorvs.autoparcel.ParcelAdapter;
 import java.util.Date;
 
 @AutoParcel
-public abstract class Person {
+public abstract class Person implements Parcelable {
     @Nullable
     public String name;
     @ParcelAdapter(DateTypeAdapter.class)

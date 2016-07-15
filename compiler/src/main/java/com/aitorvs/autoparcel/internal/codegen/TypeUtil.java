@@ -19,6 +19,8 @@ package com.aitorvs.autoparcel.internal.codegen;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 
 class TypeUtil {
     /**
@@ -50,5 +52,9 @@ class TypeUtil {
         } else {
             return s;
         }
+    }
+
+    static boolean isClassOfType(Types typeUtils, TypeMirror type, TypeMirror cls) {
+        return type != null && typeUtils.isAssignable(cls, type);
     }
 }
