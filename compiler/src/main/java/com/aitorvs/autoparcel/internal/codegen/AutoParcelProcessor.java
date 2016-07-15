@@ -185,7 +185,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         }
         List<VariableElement> nonPrivateFields = getNonPrivateLocalFields(type);
         if (nonPrivateFields.isEmpty()) {
-            mErrorReporter.abortWithError("generateClass was invoked with no non-private fields", type);
+            mErrorReporter.abortWithError("generateClass error, all fields are declared PRIVATE", type);
         }
 
         // get the properties
