@@ -274,7 +274,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 .addParameters(params);
 
         for (ParameterSpec param : params) {
-            builder.addStatement("this.$N = $N;", param.name, param.name);
+            builder.addStatement("this.$N = $N", param.name, param.name);
         }
 
         return builder.build();
