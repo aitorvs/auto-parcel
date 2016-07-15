@@ -20,10 +20,13 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 
-public class TypeUtil {
+class TypeUtil {
     /**
      * Returns the name of the package that the given type is in. If the type is in the default
      * (unnamed) package then the name is the empty string.
+     *
+     * @param type given type
+     * @return package name
      */
     static String packageNameOf(TypeElement type) {
         while (true) {
@@ -35,6 +38,12 @@ public class TypeUtil {
         }
     }
 
+    /**
+     * Returns the simple class name once package is strip package.
+     *
+     * @param s fully qualified class name
+     * @return simple class name
+     */
     static String simpleNameOf(String s) {
         if (s.contains(".")) {
             return s.substring(s.lastIndexOf('.') + 1);

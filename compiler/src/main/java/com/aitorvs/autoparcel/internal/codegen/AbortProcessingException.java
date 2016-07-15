@@ -16,5 +16,5 @@ package com.aitorvs.autoparcel.internal.codegen;
  * limitations under the License.
  */
 
-public class AbortProcessingException extends RuntimeException {
+class AbortProcessingException extends RuntimeException {
 }
