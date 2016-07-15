@@ -9,6 +9,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import com.aitorvs.android.autoparcel.model.Person;
+
 public class PersonActivity extends AppCompatActivity {
 
     private static final String EXTRA_PERSON = "EXTRA_PERSON";

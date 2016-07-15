@@ -11,6 +11,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 
+import com.aitorvs.android.autoparcel.model.Person;
+
 import java.text.ParseException;
 import java.util.Date;
 

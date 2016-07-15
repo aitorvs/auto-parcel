@@ -1,7 +1,7 @@
-package com.aitorvs.android.autoparcel;
+package com.aitorvs.android.autoparcel.model;
 
 /*
- * Copyright (C) 13/07/16 aitorvs
+ * Copyright (C) 14/07/16 aitorvs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,20 @@ package com.aitorvs.android.autoparcel;
  * limitations under the License.
  */
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import android.os.Parcel;
 
-import com.aitorvs.autoparcel.AutoParcel;
-import com.aitorvs.autoparcel.ParcelAdapter;
+import com.aitorvs.autoparcel.ParcelTypeAdapter;
 
 import java.util.Date;
 
-@AutoParcel
-public abstract class Person {
-    @Nullable
-    protected String name;
-    @ParcelAdapter(DateTypeAdapter.class)
-    protected Date birthday;
-    protected int age;
+class DateTypeAdapter implements ParcelTypeAdapter<Date> {
+    @Override
+    public Date fromParcel(Parcel in) {
+        return new Date(in.readLong());
+    }
 
-    public static Person create(@NonNull String name, @NonNull Date birthday, int age) {
-        return new AutoParcel_Person(name, birthday, age);
+    @Override
+    public void toParcel(Date value, Parcel dest) {
+        dest.writeLong(value.getTime());
     }
 }
