@@ -22,13 +22,14 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 
 import java.util.Set;
 
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 
@@ -93,21 +94,17 @@ class Parcelables {
         } else if (parcelableType.equals(TypeName.BOOLEAN) || parcelableType.equals(TypeName.BOOLEAN.box())) {
             block.add("in.readInt() == 1");
         } else if (parcelableType.equals(PARCELABLE)) {
-//            if (fieldType.equals(PARCELABLE)) {
-//                block.add("in.readParcelable($T.class.getClassLoader())",
-//                        getParcelableComponent(types, property.element.getReturnType()));
-//            } else {
-//                block.add("($T) in.readParcelable($T.class.getClassLoader())", fieldType,
-//                        getParcelableComponent(types, property.element.getReturnType()));
-//            }
+            if (property.typeName.equals(PARCELABLE)) {
+                block.add("in.readParcelable($T.class.getClassLoader())", parcelableType);
+            } else {
+                block.add("($T) in.readParcelable($T.class.getClassLoader())", property.typeName, parcelableType);
+            }
         } else if (parcelableType.equals(CHARSEQUENCE)) {
             block.add("$T.CHAR_SEQUENCE_CREATOR.createFromParcel(in)", TEXTUTILS);
-        } else if (parcelableType.equals(MAP)) {
-//            block.add("($T) in.readHashMap($T.class.getClassLoader())", fieldType,
-//                    getParcelableComponent(types, property.element.getReturnType()));
+//        } else if (parcelableType.equals(MAP)) {
+//            block.add("($T) in.readHashMap($T.class.getClassLoader())", property.typeName, parcelableType);
         } else if (parcelableType.equals(LIST)) {
-//            block.add("($T) in.readArrayList($T.class.getClassLoader())", fieldType,
-//                    getParcelableComponent(types, property.element.getReturnType()));
+            block.add("($T) in.readArrayList($T.class.getClassLoader())", property.typeName, parcelableType);
         } else if (parcelableType.equals(BOOLEANARRAY)) {
             block.add("in.createBooleanArray()");
         } else if (parcelableType.equals(BYTEARRAY)) {
@@ -123,8 +120,7 @@ class Parcelables {
                 block.add("($T) in.readStrongBinder()", property.typeName);
             }
         } else if (parcelableType.equals(OBJECTARRAY)) {
-//            block.add("in.readArray($T.class.getClassLoader())",
-//                    getParcelableComponent(types, property.element.getReturnType()));
+            block.add("in.readArray($T.class.getClassLoader())", parcelableType);
         } else if (parcelableType.equals(INTARRAY)) {
             block.add("in.createIntArray()");
         } else if (parcelableType.equals(LONGARRAY)) {
@@ -136,17 +132,14 @@ class Parcelables {
                 block.add("($T) in.readSerializable()", property.typeName);
             }
         } else if (parcelableType.equals(PARCELABLEARRAY)) {
-//            ArrayTypeName atype = (ArrayTypeName) fieldType;
-//            if (atype.componentType.equals(PARCELABLE)) {
-//                block.add("in.readParcelableArray($T.class.getClassLoader())",
-//                        getParcelableComponent(types, property.element.getReturnType()));
-//            } else {
-//                block.add("($T) in.readParcelableArray($T.class.getClassLoader())", fieldType,
-//                        getParcelableComponent(types, property.element.getReturnType()));
-//            }
+            ArrayTypeName atype = (ArrayTypeName) property.typeName;
+            if (atype.componentType.equals(PARCELABLE)) {
+                block.add("in.readParcelableArray($T.class.getClassLoader())", parcelableType);
+            } else {
+                block.add("($T) in.readParcelableArray($T.class.getClassLoader())", atype, parcelableType);
+            }
         } else if (parcelableType.equals(SPARSEARRAY)) {
-//            block.add("in.readSparseArray($T.class.getClassLoader())",
-//                    getParcelableComponent(types, property.element.getReturnType()));
+            block.add("in.readSparseArray($T.class.getClassLoader())", parcelableType);
         } else if (parcelableType.equals(SPARSEBOOLEANARRAY)) {
             block.add("in.readSparseBooleanArray()");
         } else if (parcelableType.equals(BUNDLE)) {
@@ -160,8 +153,7 @@ class Parcelables {
         } else if (parcelableType.equals(ENUM)) {
             block.add("$T.valueOf(in.readString())", property.typeName);
         } else {
-//            block.add("($T) in.readValue($T.class.getClassLoader())", fieldType,
-//                    getParcelableComponent(types, property.element.getReturnType()));
+            block.add("($T) in.readValue($T.class.getClassLoader())", property.typeName, parcelableType);
         }
 
         if (property.isNullable()) {
@@ -179,7 +171,7 @@ class Parcelables {
         }
     }
 
-    public static CodeBlock writeValue(AutoParcelProcessor.Property property, ParameterSpec out, ParameterSpec flags) {
+    public static CodeBlock writeValue(AutoParcelProcessor.Property property, ParameterSpec out, ParameterSpec flags, Types typeUtils) {
         CodeBlock.Builder block = CodeBlock.builder();
 
         if (property.isNullable()) {
@@ -188,68 +180,70 @@ class Parcelables {
             block.nextControlFlow("else");
             block.addStatement("$N.writeInt(0)", out);
         }
-        
-        if (property.typeName.equals(STRING))
+
+        TypeName type = getTypeNameFromProperty(property, typeUtils);
+
+        if (type.equals(STRING))
             block.add("$N.writeString($N)", out, property.fieldName);
-        else if (property.typeName.equals(TypeName.BYTE) || property.typeName.equals(TypeName.BYTE.box()))
+        else if (type.equals(TypeName.BYTE) || type.equals(TypeName.BYTE.box()))
             block.add("$N.writeInt($N)", out, property.fieldName);
-        else if (property.typeName.equals(TypeName.INT) || property.typeName.equals(TypeName.INT.box()))
+        else if (type.equals(TypeName.INT) || type.equals(TypeName.INT.box()))
             block.add("$N.writeInt($N)", out, property.fieldName);
-        else if (property.typeName.equals(TypeName.SHORT))
+        else if (type.equals(TypeName.SHORT))
             block.add("$N.writeInt(((Short) $N).intValue())", out, property.fieldName);
-        else if (property.typeName.equals(TypeName.SHORT.box()))
+        else if (type.equals(TypeName.SHORT.box()))
             block.add("$N.writeInt($N.intValue())", out, property.fieldName);
-        else if (property.typeName.equals(TypeName.CHAR) || property.typeName.equals(TypeName.CHAR.box()))
+        else if (type.equals(TypeName.CHAR) || type.equals(TypeName.CHAR.box()))
             block.add("$N.writeInt($N)", out, property.fieldName);
-        else if (property.typeName.equals(TypeName.LONG) || property.typeName.equals(TypeName.LONG.box()))
+        else if (type.equals(TypeName.LONG) || type.equals(TypeName.LONG.box()))
             block.add("$N.writeLong($N)", out, property.fieldName);
-        else if (property.typeName.equals(TypeName.FLOAT) || property.typeName.equals(TypeName.FLOAT.box()))
+        else if (type.equals(TypeName.FLOAT) || type.equals(TypeName.FLOAT.box()))
             block.add("$N.writeFloat($N)", out, property.fieldName);
-        else if (property.typeName.equals(TypeName.DOUBLE) || property.typeName.equals(TypeName.DOUBLE.box()))
+        else if (type.equals(TypeName.DOUBLE) || type.equals(TypeName.DOUBLE.box()))
             block.add("$N.writeDouble($N)", out, property.fieldName);
-        else if (property.typeName.equals(TypeName.BOOLEAN) || property.typeName.equals(TypeName.BOOLEAN.box()))
+        else if (type.equals(TypeName.BOOLEAN) || type.equals(TypeName.BOOLEAN.box()))
             block.add("$N.writeInt($N ? 1 : 0)", out, property.fieldName);
-        else if (property.typeName.equals(PARCELABLE))
+        else if (type.equals(PARCELABLE))
             block.add("$N.writeParcelable($N, $N)", out, property.fieldName, flags);
-        else if (property.typeName.equals(CHARSEQUENCE))
+        else if (type.equals(CHARSEQUENCE))
             block.add("$T.writeToParcel($N, $N, $N)", TEXTUTILS, property.fieldName, out, flags);
-        else if (property.typeName.equals(MAP))
-            block.add("$N.writeMap($N)", out, property.fieldName);
-        else if (property.typeName.equals(LIST))
+//        else if (type.equals(MAP))
+//            block.add("$N.writeMap($N)", out, property.fieldName);
+        else if (type.equals(LIST))
             block.add("$N.writeList($N)", out, property.fieldName);
-        else if (property.typeName.equals(BOOLEANARRAY))
+        else if (type.equals(BOOLEANARRAY))
             block.add("$N.writeBooleanArray($N)", out, property.fieldName);
-        else if (property.typeName.equals(BYTEARRAY))
+        else if (type.equals(BYTEARRAY))
             block.add("$N.writeByteArray($N)", out, property.fieldName);
-        else if (property.typeName.equals(CHARARRAY))
+        else if (type.equals(CHARARRAY))
             block.add("$N.writeCharArray($N)", out, property.fieldName);
-        else if (property.typeName.equals(STRINGARRAY))
+        else if (type.equals(STRINGARRAY))
             block.add("$N.writeStringArray($N)", out, property.fieldName);
-        else if (property.typeName.equals(IBINDER))
+        else if (type.equals(IBINDER))
             block.add("$N.writeStrongBinder($N)", out, property.fieldName);
-        else if (property.typeName.equals(OBJECTARRAY))
+        else if (type.equals(OBJECTARRAY))
             block.add("$N.writeArray($N)", out, property.fieldName);
-        else if (property.typeName.equals(INTARRAY))
+        else if (type.equals(INTARRAY))
             block.add("$N.writeIntArray($N)", out, property.fieldName);
-        else if (property.typeName.equals(LONGARRAY))
+        else if (type.equals(LONGARRAY))
             block.add("$N.writeLongArray($N)", out, property.fieldName);
-        else if (property.typeName.equals(SERIALIZABLE))
+        else if (type.equals(SERIALIZABLE))
             block.add("$N.writeSerializable($N)", out, property.fieldName);
-        else if (property.typeName.equals(PARCELABLEARRAY))
+        else if (type.equals(PARCELABLEARRAY))
             block.add("$N.writeParcelableArray($N)", out, property.fieldName);
-        else if (property.typeName.equals(SPARSEARRAY))
+        else if (type.equals(SPARSEARRAY))
             block.add("$N.writeSparseArray($N)", out, property.fieldName);
-        else if (property.typeName.equals(SPARSEBOOLEANARRAY))
+        else if (type.equals(SPARSEBOOLEANARRAY))
             block.add("$N.writeSparseBooleanArray($N)", out, property.fieldName);
-        else if (property.typeName.equals(BUNDLE))
+        else if (type.equals(BUNDLE))
             block.add("$N.writeBundle($N)", out, property.fieldName);
-        else if (property.typeName.equals(PERSISTABLEBUNDLE))
+        else if (type.equals(PERSISTABLEBUNDLE))
             block.add("$N.writePersistableBundle($N)", out, property.fieldName);
-        else if (property.typeName.equals(SIZE))
+        else if (type.equals(SIZE))
             block.add("$N.writeSize($N)", out, property.fieldName);
-        else if (property.typeName.equals(SIZEF))
+        else if (type.equals(SIZEF))
             block.add("$N.writeSizeF($N)", out, property.fieldName);
-        else if (property.typeName.equals(ENUM))
+        else if (type.equals(ENUM))
             block.add("$N.writeString($N.name())", out, property.fieldName);
         else
             block.add("$N.writeValue($N)", out, property.fieldName);
@@ -271,6 +265,7 @@ class Parcelables {
             block.nextControlFlow("else");
             block.addStatement("$N.writeInt(0)", out);
         }
+
         block.addStatement("$N.toParcel($N, $N)", adapter, p.fieldName, out);
 
         if (p.isNullable()) {
@@ -283,5 +278,49 @@ class Parcelables {
     static boolean isTypeRequiresSuppressWarnings(TypeName type) {
         return type.equals(LIST) ||
                 type.equals(MAP);
+    }
+
+    static TypeName getTypeNameFromProperty(AutoParcelProcessor.Property property, Types types) {
+        TypeMirror returnType = property.element.asType();
+        TypeElement element = (TypeElement) types.asElement(returnType);
+        if (element != null) {
+            TypeName parcelableType = getParcelableType(types, element);
+            if (!PARCELABLE.equals(parcelableType) && element.getKind() == ElementKind.ENUM) {
+                return ENUM;
+            }
+            return parcelableType;
+        }
+        return property.typeName;
+    }
+
+    public static TypeName getParcelableType(Types types, TypeElement type) {
+        TypeMirror typeMirror = type.asType();
+        while (typeMirror.getKind() != TypeKind.NONE) {
+
+            // first, check if the class is valid.
+            TypeName typeName = TypeName.get(typeMirror);
+            if (typeName instanceof ParameterizedTypeName) {
+                typeName = ((ParameterizedTypeName) typeName).rawType;
+            }
+            if (isValidType(typeName)) {
+                return typeName;
+            }
+
+            // then check if it implements valid interfaces
+            for (TypeMirror iface : type.getInterfaces()) {
+                TypeName inherited = getParcelableType(types, (TypeElement) types.asElement(iface));
+                if (inherited != null) {
+                    return inherited;
+                }
+            }
+            // then move on
+            type = (TypeElement) types.asElement(typeMirror);
+            typeMirror = type.getSuperclass();
+        }
+        return null;
+    }
+
+    public static boolean isValidType(TypeName typeName) {
+        return typeName.isPrimitive() || typeName.isBoxedPrimitive() || VALID_TYPES.contains(typeName);
     }
 }

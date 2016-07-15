@@ -314,7 +314,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 FieldSpec typeAdapter = typeAdapters.get(p.typeAdapter);
                 builder.addCode(Parcelables.writeValueWithTypeAdapter(typeAdapter, p, dest));
             } else {
-                builder.addCode(Parcelables.writeValue(p, dest, flags));
+                builder.addCode(Parcelables.writeValue(p, dest, flags, env.getTypeUtils()));
             }
         }
 
@@ -350,7 +350,8 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 Parcelables.readValueWithTypeAdapter(ctorCall, p, typeAdapters.get(p.typeAdapter));
             } else {
                 requiresSuppressWarnings |= Parcelables.isTypeRequiresSuppressWarnings(p.typeName);
-                Parcelables.readValue(ctorCall, p, p.typeName);
+                TypeName parcelableType = Parcelables.getTypeNameFromProperty(p, env.getTypeUtils());
+                Parcelables.readValue(ctorCall, p, parcelableType);
             }
 
             if (i < n - 1) ctorCall.add(",");
