@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">Auto Parcel</string>
+    <string name="app_name">AutoParcel</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="full_name">Full name</string>
+    <string name="date_of_birth">dd-MM-yyyy</string>
+    <string name="age">Age</string>
+    <string name="formatName">Name: %1$s</string>
+    <string name="format_date">Date of birth: %1$s</string>
+    <string name="format_age">Age: %1$d</string>
 </resources>

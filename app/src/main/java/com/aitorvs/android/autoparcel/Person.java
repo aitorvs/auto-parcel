@@ -16,6 +16,7 @@ package com.aitorvs.android.autoparcel;
  * limitations under the License.
  */
 
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.aitorvs.autoparcel.AutoParcel;
@@ -24,13 +25,14 @@ import com.aitorvs.autoparcel.ParcelAdapter;
 import java.util.Date;
 
 @AutoParcel
-public abstract class MyParcelable {
-    private int intVale;
-    private String stringValue;
-    private AnotherParcelable anotherParcelable;
+public abstract class Person {
     @Nullable
-    protected long[] longArray;
-    @Nullable
+    protected String name;
     @ParcelAdapter(DateTypeAdapter.class)
-    protected Date date;
+    protected Date birthday;
+    protected int age;
+
+    public static Person create(@NonNull String name, @NonNull Date birthday, int age) {
+        return new AutoParcel_Person(name, birthday, age);
+    }
 }
