@@ -7,7 +7,7 @@ android {
 
     defaultConfig {
         applicationId "com.aitorvs.android.com.autoparcel"
-        minSdkVersion 24
+        minSdkVersion 19
         targetSdkVersion 24
         versionCode 1
         versionName "1.0"
