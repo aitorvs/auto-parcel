@@ -61,6 +61,21 @@ You will need to add a convenience builder method (e.g. `creator`)
 that calls the generated class, which always follows the convention 
 `AutoParcel_<YouClassName>`. And that is all there is to it.
 
+You are ready now to e.g. send an instance of `Person` across an intent
+
+```
+intent.putExtra(EXTRA_PERSON, (Parcelable) person);
+```
+
+To avoid the need to cast `Person` to `(Parcelable)` just add `implements Parcelable` 
+to your abstract class definition. AutoParcel will detect it and do the rest anyway.
+
+```
+@AutoParcel
+public abstract class Person implements Parcelable {...}
+```
+
+
 ## Parcel Adapters
 
 AutoParcel supports all types supported by [Parcel](https://developer.android.com/reference/android/os/Parcel.html)
