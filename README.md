@@ -23,7 +23,7 @@ annotation processors to generate your parcelable classes at compile time.
 
 ## Installation
 
-Just add the following gradle dependencies:
+Just add the following to gradle dependencies:
 
 ```gradle
 dependencies {
@@ -39,8 +39,9 @@ The annotation processor requires [android-apt](https://bitbucket.org/hvisser/an
 
 ## Usage
 
-The use of the library is very simple. You just implement an abstract 
-`Parcelable`-to-be class and AutoParcel will do the rest.
+The use of the library is very simple. 
+Just create an abstract `Parcelable`-to-be class, annotate it with `@AutoParcel` and 
+it will do the rest.
 
 ```java
 import com.aitorvs.autoparcel.AutoParcel;
@@ -57,9 +58,11 @@ public abstract class Person {
 }
 ```
 
-You will need to add a convenience builder method (e.g. `creator`) 
-that calls the generated class, which always follows the convention 
-`AutoParcel_<YouClassName>`. And that is all there is to it.
+AutoParcel will generate a parcelable class that extends from the abstract
+class you created. The generated class name follows the convention `AutoParcel_<YouClassName>`.
+
+You will need to add a convenience builder method (e.g. `creator`) that 
+calls the generated class constructor and that is all there is to it. 
 
 You are ready now to e.g. send an instance of `Person` across an intent
 
@@ -79,7 +82,7 @@ public abstract class Person implements Parcelable {...}
 ## Parcel Adapters
 
 AutoParcel supports all types supported by [Parcel](https://developer.android.com/reference/android/os/Parcel.html)
-with the exception of `Map` -- why [here](https://developer.android.com/reference/android/os/Parcel.html). 
+with the exception of `Map` -- why? read [here](https://developer.android.com/reference/android/os/Parcel.html). 
 
 At times you will also need to parcel more complex types. For that, use `ParcelAdapter`s.
 Let's see an example for a `Date` parcel adapter.
