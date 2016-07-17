@@ -5,9 +5,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.SourceVersion;
-
 /**
  * An annotation to indicate the auto-parcel that the annotated class needs to be {@link android.os.Parcelable}
  *
@@ -18,6 +15,6 @@ import javax.lang.model.SourceVersion;
  * </pre>
  */
 @Target(ElementType.TYPE) // on class level
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 public @interface AutoParcel {
 }
