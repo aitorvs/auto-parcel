@@ -1,4 +1,7 @@
 apply plugin: 'java'
+apply plugin: 'maven'
+
+group = 'com.github.aitorvs'
 
 // This module will be used in Android projects, need to be compatible with Java 1.7
 sourceCompatibility = JavaVersion.VERSION_1_7
