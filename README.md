@@ -30,8 +30,8 @@ dependencies {
     
     //... other dependencies here
     
-    compile 'com.github.aitorvs.autoparcel:library:x.y.z'
-    apt 'com.github.aitorvs.autoparcel:compiler:x.y.z'
+    compile 'com.github.aitorvs.autoparcel:library:0.1.0-SNAPSHOT'
+    apt 'com.github.aitorvs.autoparcel:compiler:0.1.0-SNAPSHOT'
 }
 ```
 
