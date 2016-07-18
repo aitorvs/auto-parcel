@@ -9,5 +9,4 @@ targetCompatibility = JavaVersion.VERSION_1_7
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compileOnly 'com.google.android:android:2.1.2'
 }

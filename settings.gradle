@@ -1,1 +1,1 @@
-include ':app', ':compiler', ':library'
+include ':app', ':compiler', ':library', ':adapter'
