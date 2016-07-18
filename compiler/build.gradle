@@ -1,4 +1,7 @@
 apply plugin: 'java'
+apply plugin: 'maven'
+
+group = 'com.github.aitorvs'
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
