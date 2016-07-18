@@ -27,12 +27,12 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    provided 'com.github.aitorvs.auto-parcel:library:-SNAPSHOT'
-    apt 'com.github.aitorvs.auto-parcel:compiler:-SNAPSHOT'
-    compile 'com.github.aitorvs.auto-parcel:adapter:-SNAPSHOT'
-//    provided project(':library')
-//    compile project(':adapter')
-//    apt project(':compiler')
+//    provided 'com.github.aitorvs.auto-parcel:library:0.1.0-rc1'
+//    apt 'com.github.aitorvs.auto-parcel:compiler:0.1.0-rc1'
+//    compile 'com.github.aitorvs.auto-parcel:adapter:0.1.0-rc1'
+    provided project(':library')
+    compile project(':adapter')
+    apt project(':compiler')
     compile 'com.android.support:appcompat-v7:24.0.0'
     compile 'com.android.support:design:24.0.0'
 }
