@@ -30,8 +30,8 @@ dependencies {
     
     //... other dependencies here
     
-    provided 'com.github.aitorvs.autop-arcel:library:0.1.0-rc1'
-    apt 'com.github.aitorvs.autop-arcel:compiler:0.1.0-rc1'
+    provided 'com.github.aitorvs.auto-parcel:library:0.1.0-rc1'
+    apt 'com.github.aitorvs.auto-parcel:compiler:0.1.0-rc1'
 }
 ```
 
