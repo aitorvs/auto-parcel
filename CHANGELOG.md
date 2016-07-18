@@ -1,6 +1,6 @@
 Change Log
 ==========
 
-### Version 0.1.0-SNAPSHOT *(2016-07-17)*
+### Version 0.1.0-rc1 *(2016-07-18)*
 
-Initial development release.
+Initial pre-release.

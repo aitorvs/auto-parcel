@@ -30,8 +30,8 @@ dependencies {
     
     //... other dependencies here
     
-    compile 'com.github.aitorvs.autoparcel:library:0.1.0-SNAPSHOT'
-    apt 'com.github.aitorvs.autoparcel:compiler:0.1.0-SNAPSHOT'
+    provided 'com.github.aitorvs.autop-arcel:library:0.1.0-rc1'
+    apt 'com.github.aitorvs.autop-arcel:compiler:0.1.0-rc1'
 }
 ```
 
@@ -122,6 +122,13 @@ public abstract class Person {
         return new AutoParcel_Person(name, birthday, age);
     }
 }
+```
+
+Parcel adapters are optional and the require the `ParcelTypeAdapter` runtime component.
+To use them just add to your gradle the following dependency.
+
+```
+compile 'com.github.aitorvs.auto-parcel:adapter:0.1.0-rc1'
 ```
 
 ## Pitfalls
