@@ -36,7 +36,7 @@ repositories {
 
 ### Dependencies
 
-Just add the following to gradle dependencies:
+Add the following to gradle dependencies:
 
 ```gradle
 dependencies {
