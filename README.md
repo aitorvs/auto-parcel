@@ -22,6 +22,19 @@ This is yet-another-parcelable-library that uses Android Studio
 annotation processors to generate your parcelable classes at compile time.
 
 ## Installation
+[![](https://jitpack.io/v/aitorvs/auto-parcel.svg)](https://jitpack.io/#aitorvs/auto-parcel)
+
+### Repository
+
+Add the following repo to your `app/build.gradle`
+
+```gradle
+repositories {
+    maven { url "https://jitpack.io" }
+}
+```
+
+### Dependencies
 
 Just add the following to gradle dependencies:
 
