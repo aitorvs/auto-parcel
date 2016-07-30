@@ -91,7 +91,7 @@ to your abstract class definition. AutoParcel will detect it and do the rest any
 public abstract class Person implements Parcelable {...}
 ```
 
-It is important to note that AutoParcel errors out when **private** fields are found, because
+It is important to note that `AutoParcel` errors out when **private** fields are found, because
 they are not accessible from the generated class. Use either `protected` or `public` instead.
 
 ## Parcel Adapters
