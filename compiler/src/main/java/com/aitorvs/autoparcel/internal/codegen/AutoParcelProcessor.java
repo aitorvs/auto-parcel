@@ -151,7 +151,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         if (type.getKind() != ElementKind.CLASS) {
             mErrorReporter.abortWithError("@" + AutoParcel.class.getName() + " only applies to classes", type);
         }
-        if (ancestorIsAutoParcel(type) ) {
+        if (ancestorIsAutoParcel(type)) {
             mErrorReporter.abortWithError("One @AutoParcel class shall not extend another", type);
         }
 
@@ -199,7 +199,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         if (classToExtend == null) {
             mErrorReporter.abortWithError("generateClass was invoked with null parent class", type);
         }
-        List<VariableElement> nonPrivateFields = getNonPrivateLocalFields(type);
+        List<VariableElement> nonPrivateFields = getParcelableFieldsOrError(type);
         if (nonPrivateFields.isEmpty()) {
             mErrorReporter.abortWithError("generateClass error, all fields are declared PRIVATE", type);
         }
@@ -269,13 +269,23 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         return builder.build();
     }
 
-    private List<VariableElement> getNonPrivateLocalFields(TypeElement type) {
+    /**
+     * This method returns a list of all non private fields. If any <code>private</code> fields is
+     * found, the method errors out
+     *
+     * @param type element
+     * @return list of all non-<code>private</code> fields
+     */
+    private List<VariableElement> getParcelableFieldsOrError(TypeElement type) {
         List<VariableElement> allFields = ElementFilter.fieldsIn(type.getEnclosedElements());
         List<VariableElement> nonPrivateFields = new ArrayList<>();
 
         for (VariableElement field : allFields) {
             if (!field.getModifiers().contains(PRIVATE)) {
                 nonPrivateFields.add(field);
+            } else {
+                // return error, PRIVATE fields are not allowed
+                mErrorReporter.abortWithError("getFieldsError error, PRIVATE fields not allowed", type);
             }
         }
 
@@ -408,7 +418,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 .initializer("$L", creatorImpl)
                 .build();
     }
-    
+
     private void checkModifiersIfNested(TypeElement type) {
         ElementKind enclosingKind = type.getEnclosingElement().getKind();
         if (enclosingKind.isClass() || enclosingKind.isInterface()) {
@@ -425,7 +435,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
     }
 
     private boolean ancestorIsAutoParcel(TypeElement type) {
-        while(true) {
+        while (true) {
             TypeMirror parentMirror = type.getSuperclass();
             if (parentMirror.getKind() == TypeKind.NONE) {
                 return false;
