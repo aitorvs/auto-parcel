@@ -229,7 +229,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         TypeName classTypeName = ClassName.get(pkg, className);
         TypeSpec.Builder subClass = TypeSpec.classBuilder(className)
                 // Add the version
-                .addField(TypeName.INT, "version", PUBLIC)
+                .addField(TypeName.INT, "version", PRIVATE)
                 // Class must be always final
                 .addModifiers(FINAL)
                 // extends from original abstract class
