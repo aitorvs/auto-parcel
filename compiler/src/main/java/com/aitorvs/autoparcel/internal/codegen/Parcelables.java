@@ -97,7 +97,7 @@ class Parcelables {
             if (property.typeName.equals(PARCELABLE)) {
                 block.add("in.readParcelable($T.class.getClassLoader())", parcelableType);
             } else {
-                block.add("($T) in.readParcelable($T.class.getClassLoader())", property.typeName, parcelableType);
+                block.add("($T) in.readParcelable($T.class.getClassLoader())", property.typeName, property.typeName);
             }
         } else if (parcelableType.equals(CHARSEQUENCE)) {
             block.add("$T.CHAR_SEQUENCE_CREATOR.createFromParcel(in)", TEXTUTILS);
@@ -136,6 +136,7 @@ class Parcelables {
             if (atype.componentType.equals(PARCELABLE)) {
                 block.add("in.readParcelableArray($T.class.getClassLoader())", parcelableType);
             } else {
+                // FIXME: 31/07/16 not sure if this works
                 block.add("($T) in.readParcelableArray($T.class.getClassLoader())", atype, parcelableType);
             }
         } else if (parcelableType.equals(SPARSEARRAY)) {
@@ -169,6 +170,15 @@ class Parcelables {
         if (property.isNullable()) {
             block.add(" : null");
         }
+    }
+
+    public static CodeBlock writeVersion(int version, ParameterSpec out) {
+        CodeBlock.Builder block = CodeBlock.builder();
+
+        block.add("$N.writeInt( /* version */ " + version + ")", out);
+        block.add(";\n");
+
+        return block.build();
     }
 
     public static CodeBlock writeValue(AutoParcelProcessor.Property property, ParameterSpec out, ParameterSpec flags, Types typeUtils) {
