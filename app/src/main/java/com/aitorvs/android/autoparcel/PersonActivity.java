@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.widget.TextView;
 
 import com.aitorvs.android.autoparcel.model.Person;
@@ -45,10 +46,10 @@ public class PersonActivity extends AppCompatActivity {
             date.setText(getString(R.string.format_date, person.birthday.toString()));
             age.setText(getString(R.string.format_age, person.age));
             fullAddress.setText(getString(R.string.full_address,
-                    person.address.street,
-                    person.address.postCode,
-                    person.address.city,
-                    person.address.country));
+                    TextUtils.isEmpty(person.address.street) ? "<street>" : person.address.street,
+                    TextUtils.isEmpty(person.address.postCode) ? "<PC>" : person.address.postCode,
+                    TextUtils.isEmpty(person.address.city) ? "<city>" : person.address.city,
+                    TextUtils.isEmpty(person.address.country) ? "<country>" : person.address.country));
         }
     }
 }

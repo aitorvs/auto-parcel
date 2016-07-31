@@ -5,7 +5,7 @@ Change Log
 
  * Implement object version and field version to enable backwards compatibility
 
-### Version 0.1.0-rc2 *(2016-08-XX)*
+### Version 0.1.0-rc2 *(2016-08-31)*
 
  * Fix a bug that affected `readParcelable`
  * Add nested `Parcelable` objects to the sample app

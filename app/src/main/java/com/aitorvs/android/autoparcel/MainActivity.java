@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
                             mStreetEditText.getText().toString(),
                             mPostcodeEditText.getText().toString(),
                             mCityEditText.getText().toString(),
-                            null);
+                            /* Country */ null);
                     Person person = Person.create(
                             mNameEditText.getText().toString(),
                             date, age, address);
