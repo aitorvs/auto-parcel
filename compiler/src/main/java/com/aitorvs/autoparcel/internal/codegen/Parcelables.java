@@ -172,6 +172,15 @@ class Parcelables {
         }
     }
 
+    public static CodeBlock writeVersion(int version, ParameterSpec out) {
+        CodeBlock.Builder block = CodeBlock.builder();
+
+        block.add("$N.writeInt( /* version */ " + version + ")", out);
+        block.add(";\n");
+
+        return block.build();
+    }
+
     public static CodeBlock writeValue(AutoParcelProcessor.Property property, ParameterSpec out, ParameterSpec flags, Types typeUtils) {
         CodeBlock.Builder block = CodeBlock.builder();
 
