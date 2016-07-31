@@ -22,13 +22,19 @@ import android.support.annotation.Nullable;
 
 import com.aitorvs.autoparcel.AutoParcel;
 import com.aitorvs.autoparcel.ParcelAdapter;
+import com.aitorvs.autoparcel.ParcelVersion;
 
 import java.util.Date;
 
-@AutoParcel
+@AutoParcel(version = 1)
 public abstract class Person implements Parcelable {
     @Nullable
     public String name;
+
+    @ParcelVersion(from = 1)
+    @Nullable
+    public String lastName;
+
     @ParcelAdapter(DateTypeAdapter.class)
     public Date birthday;
     public int age;
@@ -37,6 +43,6 @@ public abstract class Person implements Parcelable {
     public Address address;
 
     public static Person create(@NonNull String name, @NonNull Date birthday, int age, Address address) {
-        return new AutoParcel_Person(name, birthday, age, address);
+        return new AutoParcel_Person(name, "Doe", birthday, age, address);
     }
 }
