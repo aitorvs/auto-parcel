@@ -17,4 +17,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE) // on class level
 @Retention(RetentionPolicy.SOURCE)
 public @interface AutoParcel {
+    int version() default 0;
 }

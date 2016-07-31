@@ -18,6 +18,7 @@ package com.aitorvs.autoparcel.internal.codegen;
 
 import com.aitorvs.autoparcel.AutoParcel;
 import com.aitorvs.autoparcel.ParcelAdapter;
+import com.aitorvs.autoparcel.ParcelVersion;
 import com.aitorvs.autoparcel.internal.common.MoreElements;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Strings;
@@ -81,8 +82,8 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         final VariableElement element;
         final TypeName typeName;
         final ImmutableSet<String> annotations;
+        final int version;
         TypeMirror typeAdapter;
-
 
         Property(String fieldName, VariableElement element) {
             this.fieldName = fieldName;
@@ -90,6 +91,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
             this.typeName = TypeName.get(element.asType());
             this.annotations = getAnnotations(element);
 
+            // get the parcel adapter if any
             ParcelAdapter parcelAdapter = element.getAnnotation(ParcelAdapter.class);
             if (parcelAdapter != null) {
                 try {
@@ -98,10 +100,18 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                     this.typeAdapter = e.getTypeMirror();
                 }
             }
+
+            // get the element version, default 0
+            ParcelVersion parcelVersion = element.getAnnotation(ParcelVersion.class);
+            this.version = parcelVersion == null ? 0 : parcelVersion.from();
         }
 
         public boolean isNullable() {
             return this.annotations.contains("Nullable");
+        }
+
+        public int version() {
+            return this.version;
         }
 
         private ImmutableSet<String> getAnnotations(VariableElement element) {
@@ -210,23 +220,30 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         // get the type adapters
         ImmutableMap<TypeMirror, FieldSpec> typeAdapters = getTypeAdapters(properties);
 
+        // get the parcel version
+        //noinspection ConstantConditions
+        int version = type.getAnnotation(AutoParcel.class).version();
 
         // Generate the AutoParcel_??? class
         String pkg = TypeUtil.packageNameOf(type);
         TypeName classTypeName = ClassName.get(pkg, className);
         TypeSpec.Builder subClass = TypeSpec.classBuilder(className)
+                // Add the version
+                .addField(TypeName.INT, "version", PUBLIC)
                 // Class must be always final
                 .addModifiers(FINAL)
                 // extends from original abstract class
                 .superclass(ClassName.get(pkg, classToExtend))
-                // Add the constructor
+                // Add the DEFAULT constructor
                 .addMethod(generateConstructor(properties))
+                // Add the private constructor
+                .addMethod(generateConstructorFromParcel(processingEnv, properties, typeAdapters))
                 // overrides describeContents()
                 .addMethod(generateDescribeContents())
                 // static final CREATOR
                 .addField(generateCreator(processingEnv, properties, classTypeName, typeAdapters))
                 // overrides writeToParcel()
-                .addMethod(generateWriteToParcel(processingEnv, properties, typeAdapters)); // generate writeToParcel()
+                .addMethod(generateWriteToParcel(version, processingEnv, properties, typeAdapters)); // generate writeToParcel()
 
         if (!ancestoIsParcelable(processingEnv, type)) {
             // Implement android.os.Parcelable if the ancestor does not do it.
@@ -309,6 +326,55 @@ public final class AutoParcelProcessor extends AbstractProcessor {
         return builder.build();
     }
 
+    private MethodSpec generateConstructorFromParcel(
+            ProcessingEnvironment env,
+            ImmutableList<Property> properties,
+            ImmutableMap<TypeMirror, FieldSpec> typeAdapters) {
+
+        // Create the PRIVATE constructor from Parcel
+        MethodSpec.Builder builder = MethodSpec.constructorBuilder()
+                .addModifiers(PRIVATE)      // private
+                .addParameter(ClassName.bestGuess("android.os.Parcel"), "in"); // input param
+
+        // get a code block builder
+        CodeBlock.Builder block = CodeBlock.builder();
+
+        // First thing is reading the Parcelable object version
+        block.add("this.version = in.readInt();\n");
+
+        // FIXME: 31/07/16 remove if not used
+        boolean requiresSuppressWarnings = false;
+
+        // Now, iterate all properties, check the version initialize them
+        for (Property p : properties) {
+            block.add("this.$N = ", p.fieldName);
+
+            // get the property version
+            int pVersion = p.version();
+            if (pVersion > 0) {
+                block.add("this.version >= " + pVersion + " ? (");
+            }
+
+            if (p.typeAdapter != null && typeAdapters.containsKey(p.typeAdapter)) {
+                Parcelables.readValueWithTypeAdapter(block, p, typeAdapters.get(p.typeAdapter));
+            } else {
+                requiresSuppressWarnings |= Parcelables.isTypeRequiresSuppressWarnings(p.typeName);
+                TypeName parcelableType = Parcelables.getTypeNameFromProperty(p, env.getTypeUtils());
+                Parcelables.readValue(block, p, parcelableType);
+            }
+
+            if (pVersion > 0) {
+                block.add(") : null");
+            }
+
+            block.add(";\n");
+        }
+
+        builder.addCode(block.build());
+
+        return builder.build();
+    }
+
     private String generatedSubclassName(TypeElement type, int depth) {
         return generatedClassName(type, Strings.repeat("$", depth) + "AutoParcel_");
     }
@@ -325,6 +391,7 @@ public final class AutoParcelProcessor extends AbstractProcessor {
     }
 
     private MethodSpec generateWriteToParcel(
+            int version,
             ProcessingEnvironment env,
             ImmutableList<Property> properties,
             ImmutableMap<TypeMirror, FieldSpec> typeAdapters) {
@@ -338,6 +405,10 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 .addParameter(dest)
                 .addParameter(flags);
 
+        // write first the parcelable object version...
+        builder.addCode(Parcelables.writeVersion(version, dest));
+
+        // ...then write all the properties
         for (Property p : properties) {
             if (p.typeAdapter != null && typeAdapters.containsKey(p.typeAdapter)) {
                 FieldSpec typeAdapter = typeAdapters.get(p.typeAdapter);
@@ -369,26 +440,10 @@ public final class AutoParcelProcessor extends AbstractProcessor {
 
         Types typeUtils = env.getTypeUtils();
         CodeBlock.Builder ctorCall = CodeBlock.builder();
-        ctorCall.add("return new $T(\n", type);
-        ctorCall.indent().indent();
         boolean requiresSuppressWarnings = false;
-        for (int i = 0, n = properties.size(); i < properties.size(); i++) {
-            Property p = properties.get(i);
+        ctorCall.add("return new $T(in);\n", type);
 
-            if (p.typeAdapter != null && typeAdapters.containsKey(p.typeAdapter)) {
-                Parcelables.readValueWithTypeAdapter(ctorCall, p, typeAdapters.get(p.typeAdapter));
-            } else {
-                requiresSuppressWarnings |= Parcelables.isTypeRequiresSuppressWarnings(p.typeName);
-                TypeName parcelableType = Parcelables.getTypeNameFromProperty(p, env.getTypeUtils());
-                Parcelables.readValue(ctorCall, p, parcelableType);
-            }
-
-            if (i < n - 1) ctorCall.add(",");
-            ctorCall.add("\n");
-        }
-        ctorCall.unindent().unindent();
-        ctorCall.add(");\n");
-
+        // Method createFromParcel()
         MethodSpec.Builder createFromParcel = MethodSpec.methodBuilder("createFromParcel")
                 .addAnnotation(Override.class);
         if (requiresSuppressWarnings) {
