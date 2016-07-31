@@ -1,7 +1,7 @@
 package com.aitorvs.android.autoparcel.model;
 
 /*
- * Copyright (C) 13/07/16 aitorvs
+ * Copyright (C) 31/07/16 aitorvs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,25 +18,21 @@ package com.aitorvs.android.autoparcel.model;
 
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import com.aitorvs.autoparcel.AutoParcel;
-import com.aitorvs.autoparcel.ParcelAdapter;
-
-import java.util.Date;
 
 @AutoParcel
-public abstract class Person implements Parcelable {
-    @Nullable
-    public String name;
-    @ParcelAdapter(DateTypeAdapter.class)
-    public Date birthday;
-    public int age;
+public abstract class Address implements Parcelable {
+    @NonNull
+    public String street;
 
-    // this is another parcelable object
-    public Address address;
+    public String postCode;
 
-    public static Person create(@NonNull String name, @NonNull Date birthday, int age, Address address) {
-        return new AutoParcel_Person(name, birthday, age, address);
+    public String city;
+
+    public String country;
+
+    public static Address create(@NonNull String street, String postCode, String city, String country) {
+        return new AutoParcel_Address(street, postCode, city, country);
     }
 }

@@ -32,17 +32,23 @@ public class PersonActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_person);
 
-        TextView mFullName = (TextView) findViewById(R.id.fullName);
-        TextView mDate = (TextView) findViewById(R.id.dateOfBirth);
-        TextView mAge = (TextView) findViewById(R.id.age);
+        TextView fullName = (TextView) findViewById(R.id.fullName);
+        TextView date = (TextView) findViewById(R.id.dateOfBirth);
+        TextView age = (TextView) findViewById(R.id.age);
+        TextView fullAddress = (TextView) findViewById(R.id.fullAddress);
 
         // get the passed intent
         Intent intent = getIntent();
         if (intent != null) {
             Person person = intent.getParcelableExtra(EXTRA_PERSON);
-            mFullName.setText(getString(R.string.formatName, person.name));
-            mDate.setText(getString(R.string.format_date, person.birthday.toString()));
-            mAge.setText(getString(R.string.format_age, person.age));
+            fullName.setText(getString(R.string.formatName, person.name));
+            date.setText(getString(R.string.format_date, person.birthday.toString()));
+            age.setText(getString(R.string.format_age, person.age));
+            fullAddress.setText(getString(R.string.full_address,
+                    person.address.street,
+                    person.address.postCode,
+                    person.address.city,
+                    person.address.country));
         }
     }
 }

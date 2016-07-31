@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 
+import com.aitorvs.android.autoparcel.model.Address;
 import com.aitorvs.android.autoparcel.model.Person;
 
 import java.text.ParseException;
@@ -23,6 +24,9 @@ public class MainActivity extends AppCompatActivity {
     private EditText mAgeEditText;
     private EditText mNameEditText;
     private EditText mBdayEditText;
+    private EditText mStreetEditText;
+    private EditText mPostcodeEditText;
+    private EditText mCityEditText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +38,9 @@ public class MainActivity extends AppCompatActivity {
         mNameEditText = (EditText) findViewById(R.id.fullName);
         mBdayEditText = (EditText) findViewById(R.id.dateOfBirth);
         mAgeEditText = (EditText) findViewById(R.id.age);
+        mStreetEditText = (EditText) findViewById(R.id.street);
+        mPostcodeEditText = (EditText) findViewById(R.id.postCode);
+        mCityEditText = (EditText) findViewById(R.id.city);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -44,10 +51,14 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     int age = TextUtils.isEmpty(mAgeEditText.getText()) ? 0 : Integer.parseInt(mAgeEditText.getText().toString());
                     Date date = TextUtils.isEmpty(mBdayEditText.getText()) ? new Date(System.currentTimeMillis()) : df.parse(mBdayEditText.getText().toString());
+                    Address address = Address.create(
+                            mStreetEditText.getText().toString(),
+                            mPostcodeEditText.getText().toString(),
+                            mCityEditText.getText().toString(),
+                            null);
                     Person person = Person.create(
                             mNameEditText.getText().toString(),
-                            date,
-                            age);
+                            date, age, address);
 
                     Intent activityIntent = PersonActivity.createIntent(MainActivity.this, person);
 

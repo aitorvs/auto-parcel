@@ -33,4 +33,22 @@
         android:hint="@string/age"
         android:inputType="number" />
 
+    <EditText
+        android:id="@+id/street"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/street" />
+
+    <EditText
+        android:id="@+id/postCode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/postCode" />
+
+    <EditText
+        android:id="@+id/city"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/city" />
+
 </LinearLayout>
