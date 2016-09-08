@@ -146,6 +146,74 @@ To use them just add to your gradle the following dependency.
 compile 'com.github.aitorvs.auto-parcel:adapter:0.1.0-rc2'
 ```
 
+## Version-able Parcels
+
+**Use case**: your app issues a notification and within the pending intent, it parcels some model object.
+Overtime, your model changes, adding some new fields, so you update the app. A user of your app has a notification
+yet to be read but, before that happens, the app gets updated.
+Now when your user opens the notification, the new version of the app will try to render from the `Parcel` 
+a different version of the of the object model...not good!
+
+Using `@ParcelVersion` field annotation in combination with the `version` 
+optional parameter in `@AutoParcel` class annotation you can render data from `Parcel`s with different
+versions.
+
+Let's say we have an object model `Person`.
+
+```java
+@AutoParcel
+public abstract class Person implements Parcelable {
+    @Nullable
+    public String name;
+
+    @ParcelAdapter(DateTypeAdapter.class)
+    public Date birthday;
+    public int age;
+
+    // this is another parcelable object
+    public Address address;
+
+    public static Person create(@NonNull String name, @NonNull Date birthday, int age, Address address) {
+        return new AutoParcel_Person(name, birthday, age, address);
+    }
+}
+```
+
+At some point in our development, we decided that `Person` deserves also a field `lastName`, so we update the
+model, add the field and release a new version of the app.
+But we want our app to also render correctly previous object models (without the `lastName`)
+
+Easy, just update the model like this:
+
+```java
+@AutoParcel(version = 1)
+public abstract class Person implements Parcelable {
+    @Nullable
+    public String name;
+
+    @ParcelVersion(from = 1)
+    @Nullable
+    public String lastName;
+
+    @ParcelAdapter(DateTypeAdapter.class)
+    public Date birthday;
+    public int age;
+
+    // this is another parcelable object
+    public Address address;
+
+    public static Person create(@NonNull String name, @NonNull Date birthday, int age, Address address) {
+        return new AutoParcel_Person(name, "Doe", birthday, age, address);
+    }
+}
+```
+
+What we've done:
+- Increase the `version` of our `Parcelable` object to 1 -- default version is 0
+- Annotate the new field  with `@ParcelVersion(from = 1)` that indicates the field was added in version 1
+
+The library will take of the rest.
+
 ## Pitfalls
 
 - Bootstrap is somehow annoying because when typing your first `AutoParcel_Foo` 
