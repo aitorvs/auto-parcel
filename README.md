@@ -163,7 +163,7 @@ Let's say we have an object model `Person`.
 ```java
 @AutoParcel
 public abstract class Person implements Parcelable {
-    @Nullable
+    @NonNull
     public String name;
 
     @ParcelAdapter(DateTypeAdapter.class)
@@ -186,7 +186,7 @@ Easy, just update the model like this:
 ```java
 @AutoParcel(version = 1)
 public abstract class Person implements Parcelable {
-    @Nullable
+    @NonNull
     public String name;
 
     @ParcelVersion(from = 1)
@@ -198,8 +198,8 @@ public abstract class Person implements Parcelable {
 
     public int age;
 
-    public static Person create(@NonNull String name, @NonNull Date birthday, int age) {
-        return new AutoParcel_Person(name, "Doe", birthday, age);
+    public static Person create(@NonNull String name, String lastName, @NonNull Date birthday, int age) {
+        return new AutoParcel_Person(name, lastName, birthday, age);
     }
 }
 ```
