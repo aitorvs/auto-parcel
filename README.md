@@ -208,7 +208,7 @@ What we've done:
 - Increase the `version` of our `Parcelable` object to 1 -- default version is 0
 - Annotate the new field  with `@ParcelVersion(from = 1)` that indicates the field was added in version 1
 
-The library will take of the rest.
+The library will take care of the rest.
 
 ## Pitfalls
 
