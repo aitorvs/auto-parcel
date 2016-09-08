@@ -26,5 +26,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface ParcelVersion {
-    int from();
+    int from() default 0;
 }
