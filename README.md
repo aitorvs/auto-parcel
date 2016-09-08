@@ -168,13 +168,11 @@ public abstract class Person implements Parcelable {
 
     @ParcelAdapter(DateTypeAdapter.class)
     public Date birthday;
+
     public int age;
 
-    // this is another parcelable object
-    public Address address;
-
-    public static Person create(@NonNull String name, @NonNull Date birthday, int age, Address address) {
-        return new AutoParcel_Person(name, birthday, age, address);
+    public static Person create(@NonNull String name, @NonNull Date birthday, int age) {
+        return new AutoParcel_Person(name, birthday, age);
     }
 }
 ```
@@ -197,13 +195,11 @@ public abstract class Person implements Parcelable {
 
     @ParcelAdapter(DateTypeAdapter.class)
     public Date birthday;
+
     public int age;
 
-    // this is another parcelable object
-    public Address address;
-
-    public static Person create(@NonNull String name, @NonNull Date birthday, int age, Address address) {
-        return new AutoParcel_Person(name, "Doe", birthday, age, address);
+    public static Person create(@NonNull String name, @NonNull Date birthday, int age) {
+        return new AutoParcel_Person(name, "Doe", birthday, age);
     }
 }
 ```
