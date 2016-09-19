@@ -1,7 +1,7 @@
 Change Log
 ==========
 
-### Version 0.1.0-rc3 *(2016-08-XX)*
+### Version 0.1.0-rc3 *(2016-09-19)*
 
  * Implement object version and field version to enable backwards compatibility
 
