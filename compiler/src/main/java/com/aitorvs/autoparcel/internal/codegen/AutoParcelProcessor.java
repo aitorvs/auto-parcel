@@ -347,13 +347,14 @@ public final class AutoParcelProcessor extends AbstractProcessor {
 
         // Now, iterate all properties, check the version initialize them
         for (Property p : properties) {
-            block.add("this.$N = ", p.fieldName);
 
             // get the property version
             int pVersion = p.version();
             if (pVersion > 0) {
-                block.add("this.version >= " + pVersion + " ? (");
+                block.beginControlFlow("if (this.version >= $L)", pVersion);
             }
+
+            block.add("this.$N = ", p.fieldName);
 
             if (p.typeAdapter != null && typeAdapters.containsKey(p.typeAdapter)) {
                 Parcelables.readValueWithTypeAdapter(block, p, typeAdapters.get(p.typeAdapter));
@@ -363,11 +364,11 @@ public final class AutoParcelProcessor extends AbstractProcessor {
                 Parcelables.readValue(block, p, parcelableType);
             }
 
-            if (pVersion > 0) {
-                block.add(") : null");
-            }
-
             block.add(";\n");
+
+            if (pVersion > 0) {
+                block.endControlFlow();
+            }
         }
 
         builder.addCode(block.build());
