@@ -37,6 +37,7 @@ public abstract class Person implements Parcelable {
 
     @ParcelAdapter(DateTypeAdapter.class)
     public Date birthday;
+
     public int age;
 
     // this is another parcelable object
