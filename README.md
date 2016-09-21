@@ -43,8 +43,8 @@ dependencies {
     
     //... other dependencies here
     
-    provided 'com.github.aitorvs.auto-parcel:library:0.1.0-rc3'
-    apt 'com.github.aitorvs.auto-parcel:compiler:0.1.0-rc3'
+    provided 'com.github.aitorvs.auto-parcel:library:0.2.0'
+    apt 'com.github.aitorvs.auto-parcel:compiler:0.2.0'
 }
 ```
 
@@ -143,7 +143,7 @@ Parcel adapters are optional and the require the `ParcelTypeAdapter` runtime com
 To use them just add to your gradle the following dependency.
 
 ```
-compile 'com.github.aitorvs.auto-parcel:adapter:0.1.0-rc3'
+compile 'com.github.aitorvs.auto-parcel:adapter:0.2.0'
 ```
 
 ## Version-able Parcels
